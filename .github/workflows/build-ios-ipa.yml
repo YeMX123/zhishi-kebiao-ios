@@ -1,0 +1,35 @@
+name: Build iOS IPA
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode Project
+        run: xcodegen generate
+      - name: Build Unsigned Release App
+        run: |
+          xcodebuild -project ZhishiKebiao.xcodeproj \
+            -scheme ZhishiKebiao \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/ZhishiKebiao.app Payload/
+          zip -r ZhishiKebiao-3.1.0-unsigned.ipa Payload
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZhishiKebiao-iOS-IPA
+          path: ZhishiKebiao-3.1.0-unsigned.ipa
